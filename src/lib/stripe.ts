@@ -1,10 +1,32 @@
 import Stripe from 'stripe'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-01-25.acacia',
-})
+function getEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`${name} is required.`)
+  }
+  return value
+}
 
-export const PLANS = {
+export const getStripe = () =>
+  new Stripe(getEnv('STRIPE_SECRET_KEY'), {
+    apiVersion: '2023-10-16',
+  })
+
+type Plan = {
+  id: string
+  name: string
+  price: number
+  priceId?: string
+  features: string[]
+  limits: {
+    channels: number
+    episodesPerMonth: number
+    maxDuration: string
+  }
+}
+
+export const PLANS: Record<string, Plan> = {
   free: {
     id: 'free',
     name: 'Free',
@@ -75,6 +97,12 @@ export async function createCheckoutSession(options: {
     throw new Error('Invalid plan or free plan selected')
   }
 
+  if (!plan.priceId) {
+    throw new Error('Selected plan is not configured for Stripe checkout')
+  }
+
+  const stripe = getStripe()
+
   const session = await stripe.checkout.sessions.create({
     customer_email: options.email,
     line_items: [
@@ -96,6 +124,8 @@ export async function createCheckoutSession(options: {
 }
 
 export async function createPortalSession(customerId: string) {
+  const stripe = getStripe()
+
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,

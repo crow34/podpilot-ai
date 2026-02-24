@@ -1,13 +1,23 @@
 import OpenAI from 'openai'
 
-export const openrouter = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-  defaultHeaders: {
-    'HTTP-Referer': process.env.OPENROUTER_SITE_URL,
-    'X-Title': process.env.OPENROUTER_SITE_NAME,
-  },
-})
+function getEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`${name} is required.`)
+  }
+  return value
+}
+
+function getOpenRouterClient() {
+  return new OpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: getEnv('OPENROUTER_API_KEY'),
+    defaultHeaders: {
+      'HTTP-Referer': process.env.OPENROUTER_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      'X-Title': process.env.OPENROUTER_SITE_NAME || 'PodPilot AI',
+    },
+  })
+}
 
 export async function generatePodcastScript(options: {
   topic: string
@@ -15,6 +25,8 @@ export async function generatePodcastScript(options: {
   tone: 'professional' | 'casual' | 'entertaining' | 'educational'
   duration: 'short' | 'medium' | 'long'
 }): Promise<string> {
+  const openrouter = getOpenRouterClient()
+
   const durationMap = {
     short: '3-5 minutes (approximately 500-700 words)',
     medium: '8-12 minutes (approximately 1200-1800 words)',
@@ -62,8 +74,7 @@ Format the response as JSON with keys: title, description, script, musicMood`,
   })
 
   const content = response.choices[0]?.message?.content || ''
-  
-  // Try to parse JSON, fallback to raw text
+
   try {
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (jsonMatch) {

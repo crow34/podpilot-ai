@@ -28,7 +28,6 @@ export function generateRSSFeed(channel: PodcastChannel): string {
     feed_url: `${channel.link}/feed.xml`,
     site_url: channel.link,
     image_url: channel.imageUrl || `${channel.link}/default-podcast-image.png`,
-    author: channel.author,
     custom_namespaces: {
       itunes: 'http://www.itunes.com/dtds/podcast-1.0.dtd',
       media: 'http://search.yahoo.com/mrss/',

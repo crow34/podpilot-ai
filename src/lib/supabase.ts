@@ -1,19 +1,27 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+function getEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`${name} is required.`)
+  }
+  return value
+}
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const createBrowserClient = () => {
+  const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL')
+  const supabaseAnonKey = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  return createClient(supabaseUrl, supabaseAnonKey)
+}
 
 export const createServerClient = () => {
-  return createClient(
-    supabaseUrl,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  )
+  const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL')
+  const serviceRoleKey = getEnv('SUPABASE_SERVICE_ROLE_KEY')
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 }
